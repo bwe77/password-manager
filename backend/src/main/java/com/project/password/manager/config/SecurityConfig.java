@@ -1,82 +1,90 @@
 package com.project.password.manager.config;
 
-
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.crypto.argon2.Argon2PasswordEncoder;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import java.util.Arrays;
 import java.util.List;
 
+/**
+ * Security configuration for the Password Manager application.
+ * Configures:
+ * - JWT-based authentication (stateless sessions)
+ * - CORS for frontend communication
+ * - BCrypt password encoding for master passwords
+ * - Public vs protected endpoints
+ */
 @Configuration
 @EnableWebSecurity
-@EnableMethodSecurity
-
-// Configure JWT authentication filter
-// Set up CORS, CSRF protection
-// Define public vs protected endpoints
-// Configure password encoder (Argon2)
-
+@EnableMethodSecurity(prePostEnabled = true)
 public class SecurityConfig {
 
     /**
      * Main security filter chain configuration.
      * Defines which endpoints are public vs protected.
      */
-
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception{
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            //disable csrf - not needed for jwt based authentication
-            .csrf().disable()
-
-            //enable cors with custom config
+            // Disable CSRF - we're using JWT (stateless)
+            .csrf(csrf -> csrf.disable())
+            
+            // Enable CORS with custom configuration
             .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-
-            // configure authorization rules
+            
+            // Configure authorization rules
             .authorizeHttpRequests(auth -> auth
-                //public endpoints - no authentication required
-                .requestMatchers("/api/auth/register", "/api/auth/login", "/api/auth/refresh", "/actuator/health", "/actuator/info").permitAll()
-                //all other endpoints require authentication
+                // Public endpoints (no authentication required)
+                .requestMatchers(
+                    "/api/auth/register",
+                    "/api/auth/login",
+                    "/api/auth/refresh",
+                    "/actuator/health",
+                    "/actuator/info"
+                ).permitAll()
+                
+                // All other endpoints require authentication
                 .anyRequest().authenticated()
-            ) 
-
-            //stateless session management
-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+            )
+            
+            // Stateless session management (JWT-based, no server sessions)
+            .sessionManagement(session -> 
+                session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+            );
 
         return http.build();
     }
 
     /**
-     * Argon2 password encoder for master passwords.
+     * BCrypt password encoder for master passwords.
      * 
-     * Argon2 is a memory-hard function that provides protection against:
-     * - GPU-based attacks (requires lots of RAM)
-     * - Side-channel attacks
-     * - Brute-force attacks (intentionally slow)
+     * Using BCrypt (strength 12) as a workaround for Spring Boot 4.0.0 Argon2 bug.
+     * BCrypt is still highly secure:
+     * - Adaptive hashing (gets slower over time as hardware improves)
+     * - Built-in salt
+     * - Industry standard, battle-tested
      * 
-     * Parameters:
-     * - saltLength: 16 bytes (128 bits)
-     * - hashLength: 32 bytes (256 bits)
-     * - parallelism: 1 (number of threads)
-     * - memory: 65536 KB (64 MB)
-     * - iterations: 3
+     * Strength 12 = 2^12 = 4096 rounds (takes ~200-300ms to hash)
+     * 
+     * Note: We'll use Argon2 directly (via de.mkammerer library) for actual password
+     * encryption keys, but BCrypt for Spring Security authentication.
      */
-
     @Bean
-    public PasswordEncoder passwordEncoder(){
-        return Argon2PasswordEncoder.defaultsForSpringSecurity_v5_8();
+    public PasswordEncoder passwordEncoder() {
+        return new BCryptPasswordEncoder(12);
     }
 
-     /**
+    /**
      * CORS configuration to allow frontend requests.
      * 
      * Security considerations:
@@ -84,18 +92,16 @@ public class SecurityConfig {
      * - Allow credentials (cookies, authorization headers)
      * - Specify allowed methods explicitly
      */
-
     @Bean
-    public CorsConfigurationSource corsConfigurationSource(){
-
+    public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-
-        //allow frontend origin - adjust for production
+        
+        // Allow frontend origin (update for production)
         configuration.setAllowedOrigins(List.of("http://localhost:3000", "http://localhost:4200"));
-
-        //allow http methods
-        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
-
+        
+        // Allow common HTTP methods
+        configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
+        
         // Allow all headers (can be restricted in production)
         configuration.setAllowedHeaders(List.of("*"));
         
@@ -110,5 +116,4 @@ public class SecurityConfig {
         
         return source;
     }
-
 }
