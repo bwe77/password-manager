@@ -11,6 +11,8 @@
 
     <modules>
         <module>backend</module>
+        <module>password-manager</module>
+        <module>password-manager</module>
     </modules>
 
     <properties>

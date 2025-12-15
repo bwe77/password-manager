@@ -1,11 +1,18 @@
 package com.project.password.manager.models;
 
+import org.springframework.data.annotation.Id;
+import org.hibernate.annotations.Generated;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.CascadeType;
+import java.time.LocalDateTime;
+import java.util.List;
+
 @Entity
 @Table(name = "users")
 public class User {
-    @Id @GeneratedValue
+    @Id @Generated
     private Long id;
     
     private String email;
@@ -18,6 +25,18 @@ public class User {
     private LocalDateTime createdAt;
     private LocalDateTime lastLoginAt;
     
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public LocalDateTime getLastLoginAt() {
+        return lastLoginAt;
+    }
+
+    public void setLastLoginAt(LocalDateTime lastLoginAt) {
+        this.lastLoginAt = lastLoginAt;
+    }
+
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
     private List<PasswordEntry> passwordEntries;
     
@@ -54,5 +73,33 @@ public class User {
 
     public void setSalt(String salt) {
         this.salt = salt;
+    }
+    
+    public String getTotpSecret() {
+        return totpSecret;
+    }
+
+    public void setTotpSecret(String totpSecret) {
+        this.totpSecret = totpSecret;
+    }
+
+    public boolean isTotpEnabled() {
+        return totpEnabled;
+    }
+
+    public void setTotpEnabled(boolean totpEnabled) {
+        this.totpEnabled = totpEnabled;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public List<PasswordEntry> getPasswordEntries() {
+        return passwordEntries;
+    }
+
+    public void setPasswordEntries(List<PasswordEntry> passwordEntries) {
+        this.passwordEntries = passwordEntries;
     }
 }
