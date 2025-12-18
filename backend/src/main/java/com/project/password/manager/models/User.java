@@ -1,8 +1,9 @@
 package com.project.password.manager.models;
 
 import org.springframework.data.annotation.Id;
-import org.hibernate.annotations.Generated;
 import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Table;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.CascadeType;
@@ -12,7 +13,8 @@ import java.util.List;
 @Entity
 @Table(name = "users")
 public class User {
-    @Id @Generated
+    @Id 
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     
     private String email;
