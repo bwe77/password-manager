@@ -1,7 +1,10 @@
 package com.project.password.manager.config;
 
+import com.project.password.manager.security.JwtAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -9,6 +12,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -23,11 +27,19 @@ import java.util.List;
  * - CORS for frontend communication
  * - BCrypt password encoding for master passwords
  * - Public vs protected endpoints
+ * 
+ * Spring Boot 4.0.0 / Spring Security 6.x compatible
  */
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity(prePostEnabled = true)
 public class SecurityConfig {
+
+    private final JwtAuthenticationFilter jwtAuthFilter;
+
+    public SecurityConfig(JwtAuthenticationFilter jwtAuthFilter) {
+        this.jwtAuthFilter = jwtAuthFilter;
+    }
 
     /**
      * Main security filter chain configuration.
@@ -60,9 +72,24 @@ public class SecurityConfig {
             // Stateless session management (JWT-based, no server sessions)
             .sessionManagement(session -> 
                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-            );
+            )
+            
+            // Add JWT filter before UsernamePasswordAuthenticationFilter
+            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
+    }
+
+    /**
+     * AuthenticationManager bean for manual authentication (login).
+     * 
+     * Spring Boot auto-configures DaoAuthenticationProvider when it detects
+     * UserDetailsService and PasswordEncoder beans, so we don't need to 
+     * manually create AuthenticationProvider in Spring Security 6.x.
+     */
+    @Bean
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
+        return config.getAuthenticationManager();
     }
 
     /**
@@ -78,6 +105,8 @@ public class SecurityConfig {
      * 
      * Note: We'll use Argon2 directly (via de.mkammerer library) for actual password
      * encryption keys, but BCrypt for Spring Security authentication.
+     * 
+     * Spring Boot will automatically use this for DaoAuthenticationProvider.
      */
     @Bean
     public PasswordEncoder passwordEncoder() {

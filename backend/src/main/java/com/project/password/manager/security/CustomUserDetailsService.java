@@ -2,7 +2,6 @@ package com.project.password.manager.security;
 
 import com.project.password.manager.models.User;
 import com.project.password.manager.repo.UserRepository;
-import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -17,11 +16,14 @@ import java.util.ArrayList;
  * Integrates with Spring Security's authentication mechanism.
  */
 @Service
-@RequiredArgsConstructor
 public class CustomUserDetailsService implements UserDetailsService {
 
     private final UserRepository userRepository;
 
+    public CustomUserDetailsService(UserRepository userRepository) {
+        this.userRepository = userRepository;
+    }
+    
     /**
      * Load user by email (username in our case).
      * 

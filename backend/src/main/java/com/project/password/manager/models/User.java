@@ -1,50 +1,48 @@
 package com.project.password.manager.models;
 
-import org.springframework.data.annotation.Id;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Table;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.CascadeType;
+import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Entity
-@Table(name = "users")
+@Table(name = "users", indexes = {
+    @Index(name = "idx_email", columnList = "email", unique = true)
+})
 public class User {
-    @Id 
+    
+    @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     
+    @Column(nullable = false, unique = true)
     private String email;
-    private String masterPasswordHash; // Argon2 hash
-    private String salt;
-
-    private String totpSecret; // encrypted
-    private boolean totpEnabled;
     
+    @Column(nullable = false)
+    private String masterPasswordHash;
+    
+    @Column(nullable = false)
+    private String salt;
+    
+    private String totpSecret;
+    private boolean totpEnabled = false;
+    
+    @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
+    
     private LocalDateTime lastLoginAt;
     
-    public void setCreatedAt(LocalDateTime createdAt) {
-        this.createdAt = createdAt;
-    }
-
-    public LocalDateTime getLastLoginAt() {
-        return lastLoginAt;
-    }
-
-    public void setLastLoginAt(LocalDateTime lastLoginAt) {
-        this.lastLoginAt = lastLoginAt;
-    }
-
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<PasswordEntry> passwordEntries;
     
-    @OneToMany(mappedBy = "user")
+    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
     private List<AuditLog> auditLogs;
 
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+    }
+
+    // Getters and Setters
     public Long getId() {
         return id;
     }
@@ -97,11 +95,31 @@ public class User {
         return createdAt;
     }
 
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public LocalDateTime getLastLoginAt() {
+        return lastLoginAt;
+    }
+
+    public void setLastLoginAt(LocalDateTime lastLoginAt) {
+        this.lastLoginAt = lastLoginAt;
+    }
+
     public List<PasswordEntry> getPasswordEntries() {
         return passwordEntries;
     }
 
     public void setPasswordEntries(List<PasswordEntry> passwordEntries) {
         this.passwordEntries = passwordEntries;
+    }
+
+    public List<AuditLog> getAuditLogs() {
+        return auditLogs;
+    }
+
+    public void setAuditLogs(List<AuditLog> auditLogs) {
+        this.auditLogs = auditLogs;
     }
 }
