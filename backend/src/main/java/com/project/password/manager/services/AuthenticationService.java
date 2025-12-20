@@ -35,7 +35,7 @@ public class AuthenticationService {
         return null; // Placeholder
     }
 
-    public AuthRequest login(AuthRequest request) {
+    public AuthResponse login(AuthRequest request) {
         // Implementation for user login
         return null; // Placeholder
     }
