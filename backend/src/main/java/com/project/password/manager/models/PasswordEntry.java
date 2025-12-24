@@ -9,7 +9,7 @@ import java.util.Set;
 public class PasswordEntry {
     @Id @GeneratedValue
     private Long id;
-    
+
     @ManyToOne
     @JoinColumn(name = "user_id")
     private User user;
@@ -35,6 +35,14 @@ public class PasswordEntry {
     
     private Integer passwordStrength; // 0-100
     private boolean isFavorite;
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
     
     public LocalDateTime getCreatedAt() {
         return createdAt;
