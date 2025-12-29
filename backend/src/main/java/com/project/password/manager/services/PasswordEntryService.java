@@ -16,6 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
+
 /**
  * Password Entry Service
  * 
@@ -24,17 +25,20 @@ import java.util.stream.Collectors;
  */
 @Service
 public class PasswordEntryService {
-    
+
     private final PasswordEntryRepository passwordEntryRepository;
     private final UserRepository userRepository;
     private final EncryptionService encryptionService;
     private final Argon2Service argon2Service;
     private final PasswordAnalyzerService passwordAnalyzerService;
 
-    public PasswordEntryService(PasswordEntryRepository passwordEntryRepository,
-                                UserRepository userRepository,
-                                EncryptionService encryptionService,
-                                Argon2Service argon2Service, PasswordAnalyzerService passwordAnalyzerService) {
+    public PasswordEntryService(
+            PasswordEntryRepository passwordEntryRepository,
+            UserRepository userRepository,
+            EncryptionService encryptionService,
+            Argon2Service argon2Service,
+            PasswordAnalyzerService passwordAnalyzerService
+    ) {
         this.passwordEntryRepository = passwordEntryRepository;
         this.userRepository = userRepository;
         this.encryptionService = encryptionService;
@@ -58,18 +62,23 @@ public class PasswordEntryService {
      * @return Password entry response (without plaintext password)
      */
     @Transactional
-    public PasswordEntryService createPassword(Long userId, String masterPassword, CreatePasswordRequest request){
-        //load User
+    public PasswordEntryResponse createPassword(
+            Long userId,
+            String masterPassword,
+            CreatePasswordRequest request
+    ) {
+        // Load user
         User user = userRepository.findById(userId)
-                .orElseThrow(()-> new RuntimeException("User not found"));
-        
-        //Derive encryption key
+            .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        // Derive encryption key from master password
         String encryptionKey = argon2Service.deriveEncryptionKey(masterPassword, user.getSalt());
 
-        // ecnrypt password
-        EncryptionService.EncryptedData encryptedPassword = encryptionService.encrypt(request.password(), encryptionKey);
+        // Encrypt the password
+        EncryptionService.EncryptedData encryptedPassword = 
+            encryptionService.encrypt(request.password(), encryptionKey);
 
-        //create PasswordEntry entity
+        // Create password entry
         PasswordEntry entry = new PasswordEntry();
         entry.setUser(user);
         entry.setSiteName(request.siteName());
@@ -77,17 +86,18 @@ public class PasswordEntryService {
         entry.setUsername(request.username());
         entry.setEncryptedPassword(encryptedPassword.getCiphertext());
         entry.setIv(encryptedPassword.getIv());
-
-        //Encrypt notes if present
-        if(request.notes() != null && !request.notes().isEmpty()){
-            EncryptionService.EncryptedData encryptedNotes = encryptionService.encrypt(request.notes(), encryptionKey);
-            entry.setNotes(encryptedNotes.getIv());
+        
+        // Encrypt notes if provided
+        if (request.notes() != null && !request.notes().isEmpty()) {
+            EncryptionService.EncryptedData encryptedNotes = 
+                encryptionService.encrypt(request.notes(), encryptionKey);
+            entry.setNotes(encryptedNotes.getCiphertext());
         }
 
-        //Analyze password strength
-        int strength = passwordAnalyzerService.analyzeStrength(request.password());
+        // Analyze password strength
+        Integer strength = passwordAnalyzerService.calculateStrength(request.password());
         entry.setPasswordStrength(strength);
-        
+
         // Set timestamps
         entry.setCreatedAt(LocalDateTime.now());
         entry.setUpdatedAt(LocalDateTime.now());
@@ -110,11 +120,11 @@ public class PasswordEntryService {
      * @param userId User ID
      * @return List of password entries
      */
-    public List<PasswordEntryResponse> getAllPasswords(Long userId){
+    public List<PasswordEntryResponse> getAllPasswords(Long userId) {
         List<PasswordEntry> entries = passwordEntryRepository.findByUserId(userId);
         return entries.stream()
-                .map(this::toPasswordEntryResponse)
-                .collect(Collectors.toList());
+            .map(this::toPasswordEntryResponse)
+            .collect(Collectors.toList());
     }
 
     /**
@@ -128,17 +138,21 @@ public class PasswordEntryService {
      * @return Password entry with decrypted password
      */
     @Transactional
-    public PasswordDetailResponse getPasswordDetail(Long userId, Long entryId, String masterPassword){
-        //load password entry
+    public PasswordDetailResponse getPasswordDetail(
+            Long userId,
+            Long entryId,
+            String masterPassword
+    ) {
+        // Load password entry
         PasswordEntry entry = passwordEntryRepository.findById(entryId)
-                .orElseThrow(()-> new IllegalArgumentException("Password entry not found"));
-        
-        //verify ownership
-        if(!entry.getUser().getId().equals(userId)){
+            .orElseThrow(() -> new IllegalArgumentException("Password entry not found"));
+
+        // Verify ownership
+        if (!entry.getUser().getId().equals(userId)) {
             throw new SecurityException("Unauthorized access");
         }
 
-        //load user 
+        // Load user
         User user = userRepository.findById(userId)
             .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
@@ -152,21 +166,21 @@ public class PasswordEntryService {
             encryptionKey
         );
 
-        //Decrypt notes if present
+        // Decrypt notes if present
         String decryptedNotes = null;
-        if(entry.getNotes() != null && !entry.getNotes().isEmpty()){
+        if (entry.getNotes() != null && !entry.getNotes().isEmpty()) {
             decryptedNotes = encryptionService.decrypt(
                 entry.getNotes(),
-                entry.getIv(),
+                entry.getIv(),  // Reusing same IV for notes (same encryption operation)
                 encryptionKey
             );
         }
 
-        //update last accessed timestamp
+        // Update last accessed timestamp
         entry.setLastAccessedAt(LocalDateTime.now());
         passwordEntryRepository.save(entry);
 
-        //return detailed response
+        // Return with decrypted password
         return new PasswordDetailResponse(
             entry.getId(),
             entry.getSiteName(),
@@ -194,17 +208,121 @@ public class PasswordEntryService {
      * @return Updated password entry
      */
     @Transactional
-    public PasswordEntryResponse updatePassword(Long userId, Long entryId, String masterPassword, UpdatePasswordRequest request) {
-        //load password entry
+    public PasswordEntryResponse updatePassword(
+            Long userId,
+            Long entryId,
+            String masterPassword,
+            UpdatePasswordRequest request
+    ) {
+        // Load password entry
         PasswordEntry entry = passwordEntryRepository.findById(entryId)
-                .orElseThrow(()-> new IllegalArgumentException("Password entry not found"));
-        
-        //verify ownership
-        if(!entry.getUser().getId().equals(userId)){
+            .orElseThrow(() -> new IllegalArgumentException("Password entry not found"));
+
+        // Verify ownership
+        if (!entry.getUser().getId().equals(userId)) {
             throw new SecurityException("Unauthorized access");
         }
+
+        // Load user
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        // Derive encryption key
+        String encryptionKey = argon2Service.deriveEncryptionKey(masterPassword, user.getSalt());
+
+        // Encrypt new password
+        EncryptionService.EncryptedData encryptedPassword = 
+            encryptionService.encrypt(request.password(), encryptionKey);
+
+        // Update entry
+        entry.setSiteName(request.siteName());
+        entry.setSiteUrl(request.siteUrl());
+        entry.setUsername(request.username());
+        entry.setEncryptedPassword(encryptedPassword.getCiphertext());
+        entry.setIv(encryptedPassword.getIv());  // New IV for new encryption
         
+        // Update notes if provided
+        if (request.notes() != null && !request.notes().isEmpty()) {
+            EncryptionService.EncryptedData encryptedNotes = 
+                encryptionService.encrypt(request.notes(), encryptionKey);
+            entry.setNotes(encryptedNotes.getCiphertext());
+        }
+
+        // Re-analyze password strength
+        Integer strength = passwordAnalyzerService.calculateStrength(request.password());
+        entry.setPasswordStrength(strength);
+
+        // Update timestamps
+        entry.setUpdatedAt(LocalDateTime.now());
+        entry.setExpiresAt(request.expiresAt());
+
+        // Save
+        entry = passwordEntryRepository.save(entry);
+
+        return toPasswordEntryResponse(entry);
     }
+
+    /**
+     * Delete a password entry
+     * 
+     * @param userId User ID
+     * @param entryId Password entry ID
+     */
+    @Transactional
+    public void deletePassword(Long userId, Long entryId) {
+        // Load password entry
+        PasswordEntry entry = passwordEntryRepository.findById(entryId)
+            .orElseThrow(() -> new IllegalArgumentException("Password entry not found"));
+
+        // Verify ownership
+        if (!entry.getUser().getId().equals(userId)) {
+            throw new SecurityException("Unauthorized access");
+        }
+
+        // Delete
+        passwordEntryRepository.delete(entry);
+    }
+
+    /**
+     * Search password entries
+     * 
+     * @param userId User ID
+     * @param query Search query (searches site name and username)
+     * @return Matching password entries
+     */
+    public List<PasswordEntryResponse> searchPasswords(Long userId, String query) {
+        List<PasswordEntry> entries = passwordEntryRepository.findByUserId(userId);
+        
+        String lowerQuery = query.toLowerCase();
+        
+        return entries.stream()
+            .filter(entry -> 
+                entry.getSiteName().toLowerCase().contains(lowerQuery) ||
+                (entry.getUsername() != null && entry.getUsername().toLowerCase().contains(lowerQuery)) ||
+                (entry.getSiteUrl() != null && entry.getSiteUrl().toLowerCase().contains(lowerQuery))
+            )
+            .map(this::toPasswordEntryResponse)
+            .collect(Collectors.toList());
+    }
+
+    /**
+     * Convert PasswordEntry entity to response DTO (without password)
+     */
+    private PasswordEntryResponse toPasswordEntryResponse(PasswordEntry entry) {
+        return new PasswordEntryResponse(
+            entry.getId(),
+            entry.getSiteName(),
+            entry.getSiteUrl(),
+            entry.getUsername(),
+            entry.getCreatedAt(),
+            entry.getLastAccessedAt(),
+            entry.isBreached(),
+            entry.getPasswordStrength(),
+            entry.isFavorite(),
+            null  // tags - implement if needed
+        );
+    }
+
     // Inner class for PasswordDetailResponse (create this in dto/response package)
     public record PasswordDetailResponse(
         Long id,
