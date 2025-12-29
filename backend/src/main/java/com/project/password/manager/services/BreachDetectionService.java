@@ -17,10 +17,8 @@ public class BreachDetectionService {
     // checkAllPasswords(Long userId) -> List<BreachedPasswordInfo>
     // scheduleBreachCheck() // @Scheduled for periodic checks
 
-    public BreachDetectionService(WebClient.Builder webClientBuilder) {
-        this.haveibeenpwnedClient = webClientBuilder
-            .baseUrl("https://api.pwnedpasswords.com")
-            .build();
+    public BreachDetectionService(WebClient haveIBeenPwnedWebClient) {
+        this.haveibeenpwnedClient = haveIBeenPwnedWebClient;
     }
 
 
