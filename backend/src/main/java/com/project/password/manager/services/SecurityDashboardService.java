@@ -13,9 +13,7 @@ import java.util.Map;
 
 @Service
 public class SecurityDashboardService {
-    // getDashboard(Long userId) -> SecurityDashboardResponse
-    // Returns: weak passwords count, breached count, reused count
-    // expired passwords, overall security score
+    
     private final PasswordEntryRepository passwordEntryRepository;
 
     public SecurityDashboardService(PasswordEntryRepository passwordEntryRepository) {
