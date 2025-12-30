@@ -12,5 +12,6 @@ class PasswordManagerApplicationTests {
     void contextLoads() {
         // This test just verifies that the Spring context loads successfully
     }
+    
 
 }

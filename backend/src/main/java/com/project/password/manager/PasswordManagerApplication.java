@@ -9,6 +9,7 @@ import org.springframework.scheduling.annotation.EnableAsync;
 public class PasswordManagerApplication {
 
     public static void main(String[] args) {
+        
         SpringApplication.run(PasswordManagerApplication.class, args);
     }
 }
