@@ -35,7 +35,7 @@ public class EncryptionService {
     private static final String ALGORITHM = "AES/GCM/NoPadding";
     private static final int AES_KEY_SIZE = 256; // bits
     private static final int GCM_IV_LENGTH = 12; // bytes
-    private static final int GCM_TAG_LENGTH = 16; // bytes
+    private static final int GCM_TAG_LENGTH_BITS = 128; // bits
 
     private final SecureRandom secureRandom;
 
@@ -68,7 +68,7 @@ public class EncryptionService {
             
             // Initialize cipher for encryption
             Cipher cipher = Cipher.getInstance(ALGORITHM);
-            GCMParameterSpec gcmSpec = new GCMParameterSpec(GCM_TAG_LENGTH, iv);
+            GCMParameterSpec gcmSpec = new GCMParameterSpec(GCM_TAG_LENGTH_BITS, iv);
             cipher.init(Cipher.ENCRYPT_MODE, key, gcmSpec);
             
             // Encrypt the plaintext
@@ -113,7 +113,7 @@ public class EncryptionService {
 
             // Initialize cipher for encryption
             Cipher cipher = Cipher.getInstance(ALGORITHM);
-            GCMParameterSpec gcmSpec = new GCMParameterSpec(GCM_TAG_LENGTH, iv);
+            GCMParameterSpec gcmSpec = new GCMParameterSpec(GCM_TAG_LENGTH_BITS, iv);
             cipher.init(Cipher.DECRYPT_MODE, key, gcmSpec);
 
             //decrypt

@@ -12,6 +12,8 @@ import com.project.password.manager.security.Argon2Service;
 import com.project.password.manager.security.EncryptionService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -31,6 +33,7 @@ public class PasswordEntryService {
     private final EncryptionService encryptionService;
     private final Argon2Service argon2Service;
     private final PasswordAnalyzerService passwordAnalyzerService;
+    private static final Logger logger = LoggerFactory.getLogger(PasswordEntryService.class);
 
     public PasswordEntryService(
             PasswordEntryRepository passwordEntryRepository,
@@ -67,51 +70,61 @@ public class PasswordEntryService {
             String masterPassword,
             CreatePasswordRequest request
     ) {
-        // Load user
-        User user = userRepository.findById(userId)
-            .orElseThrow(() -> new IllegalArgumentException("User not found"));
+        logger.info("Creating password entry for user: {}, site: {}", userId, request.siteName());
 
-        // Derive encryption key from master password
-        String encryptionKey = argon2Service.deriveEncryptionKey(masterPassword, user.getSalt());
+        try {
+            // Load user
+            User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
 
-        // Encrypt the password
-        EncryptionService.EncryptedData encryptedPassword = 
-            encryptionService.encrypt(request.password(), encryptionKey);
+            // Derive encryption key from master password
+            String encryptionKey = argon2Service.deriveEncryptionKey(masterPassword, user.getSalt());
 
-        // Create password entry
-        PasswordEntry entry = new PasswordEntry();
-        entry.setUser(user);
-        entry.setSiteName(request.siteName());
-        entry.setSiteUrl(request.siteUrl());
-        entry.setUsername(request.username());
-        entry.setEncryptedPassword(encryptedPassword.getCiphertext());
-        entry.setIv(encryptedPassword.getIv());
-        
-        // Encrypt notes if provided
-        if (request.notes() != null && !request.notes().isEmpty()) {
-            EncryptionService.EncryptedData encryptedNotes = 
-                encryptionService.encrypt(request.notes(), encryptionKey);
-            entry.setNotes(encryptedNotes.getCiphertext());
+            // Encrypt the password
+            EncryptionService.EncryptedData encryptedPassword = 
+                encryptionService.encrypt(request.password(), encryptionKey);
+
+            // Create password entry
+            PasswordEntry entry = new PasswordEntry();
+            entry.setUser(user);
+            entry.setSiteName(request.siteName());
+            entry.setSiteUrl(request.siteUrl());
+            entry.setUsername(request.username());
+            entry.setEncryptedPassword(encryptedPassword.getCiphertext());
+            entry.setIv(encryptedPassword.getIv());
+            
+            // Encrypt notes if provided
+            if (request.notes() != null && !request.notes().isEmpty()) {
+                EncryptionService.EncryptedData encryptedNotes = 
+                    encryptionService.encrypt(request.notes(), encryptionKey);
+                entry.setNotes(encryptedNotes.getCiphertext());
+            }
+
+            // Analyze password strength
+            Integer strength = passwordAnalyzerService.calculateStrength(request.password());
+            entry.setPasswordStrength(strength);
+
+            // Set timestamps
+            entry.setCreatedAt(LocalDateTime.now());
+            entry.setUpdatedAt(LocalDateTime.now());
+            entry.setExpiresAt(request.expiresAt());
+            
+            // Set breach status (will be checked later)
+            entry.setBreached(false);
+            entry.setLastBreachCheck(LocalDateTime.now());
+
+            // Save to database
+            entry = passwordEntryRepository.save(entry);
+
+            logger.debug("Password encrypted successfully");
+
+            // Return response (without plaintext password)
+            return toPasswordEntryResponse(entry);
+        } catch (Exception e) {
+            logger.error("Failed to create password for user: {}", userId, e);
+            throw e;
         }
-
-        // Analyze password strength
-        Integer strength = passwordAnalyzerService.calculateStrength(request.password());
-        entry.setPasswordStrength(strength);
-
-        // Set timestamps
-        entry.setCreatedAt(LocalDateTime.now());
-        entry.setUpdatedAt(LocalDateTime.now());
-        entry.setExpiresAt(request.expiresAt());
         
-        // Set breach status (will be checked later)
-        entry.setBreached(false);
-        entry.setLastBreachCheck(LocalDateTime.now());
-
-        // Save to database
-        entry = passwordEntryRepository.save(entry);
-
-        // Return response (without plaintext password)
-        return toPasswordEntryResponse(entry);
     }
 
     /**

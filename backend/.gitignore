@@ -1,0 +1,4 @@
+application-secrets.properties
+.env
+*.key
+*.pem
