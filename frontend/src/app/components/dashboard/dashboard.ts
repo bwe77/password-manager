@@ -1,6 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { environment } from '../../../environments/environment';
+import { Router } from '@angular/router';
 
 interface SecurityDashboard{
   totalPasswords: number;
@@ -8,7 +10,7 @@ interface SecurityDashboard{
   breachedPasswords: number;
   reusedPasswords: number;
   expiredPasswords: number;
-  overallSecurityRating: number;
+  overallSecurityScore: number;
   lastUpdated: string;
   recommendations: string[];
 }
@@ -25,7 +27,7 @@ export class DashboardComponent implements OnInit {
   loading = true;
   error: string | null = null;
 
-  constructor(private http: HttpClient) {}
+  constructor(private http: HttpClient, private router: Router) {}
   
   ngOnInit(): void {
     this.loadDashboard();
@@ -35,8 +37,7 @@ export class DashboardComponent implements OnInit {
     const token = localStorage.getItem('accessToken');
 
     if(!token){
-      this.error = 'Please log in first';
-      this.loading = false;
+      this.router.navigate(['/login']);
       return;
     }
 
@@ -44,16 +45,18 @@ export class DashboardComponent implements OnInit {
       'Authorization': `Bearer ${token}`
     });
 
-    this.http.get<SecurityDashboard>('http://localhost:8080/api/dashboard', { headers })
+    this.http.get<SecurityDashboard>(`${environment.apiUrl}/dashboard`, { headers })
       .subscribe({
         next: (data) => {
           this.dashboard = data;
           this.loading = false;
         },
         error: (err) => {
-          this.error = 'Failed to load dashboard data';
+          if (err.status === 401 || err.status === 403) {
+            this.router.navigate(['/login']);
+          }
+          this.error = 'Failed to load dashboard data.';
           this.loading = false;
-          console.error(err);
         }
       });
   }
