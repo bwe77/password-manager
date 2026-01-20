@@ -32,4 +32,82 @@ public class SecurityDashboardController {
         this.securityDashboardService = securityDashboardService;
         this.passwordEntryRepository = passwordEntryRepository;
     }
+
+    @GetMapping("")
+    public ResponseEntity<SecurityDashboardResponse> getDashboard(Authentication authentication) {
+        Long userId = Long.parseLong(authentication.getName());
+        SecurityDashboardResponse dashboard = securityDashboardService.getDashboard(userId);
+        return ResponseEntity.ok(dashboard);
+    }
+
+    @GetMapping("/weak")
+    public ResponseEntity<List<PasswordEntryResponse>> getWeakPasswords(Authentication authentication) {
+        Long userId = Long.parseLong(authentication.getName());
+        List<PasswordEntryResponse> weakPasswords = passwordEntryRepository
+            .findWeakPasswords(userId, 60) 
+            .stream()
+            .map(entry -> new PasswordEntryResponse(
+                entry.getId(), 
+                entry.getSiteName(), 
+                entry.getSiteUrl(), 
+                entry.getUsername(), 
+                entry.getCreatedAt(), 
+                entry.getLastAccessedAt(), 
+                entry.isBreached(), 
+                entry.getPasswordStrength(), 
+                entry.isFavorite(), 
+                null
+            ))
+            .collect(Collectors.toList());
+
+        return ResponseEntity.ok(weakPasswords);
+        
+    }
+
+    @GetMapping("/breached")
+    public ResponseEntity<List<PasswordEntryResponse>> getBreachedPasswords(Authentication authentication) {
+        Long userId = Long.parseLong(authentication.getName());
+        List<PasswordEntryResponse> breachedPasswords = passwordEntryRepository
+            .findBreachedPasswords(userId) 
+            .stream()
+            .map(entry -> new PasswordEntryResponse(
+                entry.getId(), 
+                entry.getSiteName(), 
+                entry.getSiteUrl(), 
+                entry.getUsername(), 
+                entry.getCreatedAt(), 
+                entry.getLastAccessedAt(), 
+                entry.isBreached(), 
+                entry.getPasswordStrength(), 
+                entry.isFavorite(), 
+                null
+            ))
+            .collect(Collectors.toList());
+
+        return ResponseEntity.ok(breachedPasswords);
+    }
+
+    @GetMapping("/expired")
+    public ResponseEntity<List<PasswordEntryResponse>> getExpiredPasswords(Authentication authentication) {
+        Long userId = Long.parseLong(authentication.getName());
+
+        List<PasswordEntryResponse> expiredPasswords = passwordEntryRepository
+            .findExpiredPasswords(userId, LocalDateTime.now())
+            .stream()
+            .map(entry -> new PasswordEntryResponse(
+                entry.getId(),
+                entry.getSiteName(),
+                entry.getSiteUrl(),
+                entry.getUsername(),
+                entry.getCreatedAt(),
+                entry.getLastAccessedAt(),
+                entry.isBreached(),
+                entry.getPasswordStrength(),
+                entry.isFavorite(),
+                null
+            ))
+            .collect(Collectors.toList());
+        
+        return ResponseEntity.ok(expiredPasswords);
+    }
 }
