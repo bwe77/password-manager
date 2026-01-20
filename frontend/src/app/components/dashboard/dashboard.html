@@ -1,60 +1,50 @@
-<div class="dashboard-container" *ngIf="!loading && !error">
+<div class="dashboard-container" *ngIf="!loading && !error && dashboard as d">
     <h1>SecurePass Dashboard</h1>
-    <p class="last-checked">Last checked: {{ dashboard.lastChecked | date:'short' }}</p>
+    <p class="last-checked">Last checked: {{ dashboard.lastUpdated | date:'short' }}</p>
     
     <!-- Overall Score-->
-    <div class="security-score" [style.back]>
-        <div class="score-circle" [style.border-color]="getScoreColor(dashboard.overallSecurityScore)">
-            <div class="score-value">{{ dashboard.overallSecurityScore }}</div>
-            <div class="score-label">{{ getScoreLabel(dashboard.overallSecurityScore) }}</div>
+    <div class="security-score" [style.background-color]="getScoreColor(d.overallSecurityScore)">
+        <div class="score-circle" [style.border-color]="getScoreColor(d.overallSecurityScore)">
+            <div class="score-value">{{ d.overallSecurityScore }}</div>
+            <div class="score-label">{{ getScoreLabel(d.overallSecurityScore) }}</div>
         </div>
 
-      <div class="score-details">
-        <h2>Overall Security Score</h2>
-        <div class="progress-bar">
-          <div class="progress-fill" 
-               [style.width.%]="dashboard.overallSecurityScore"
-               [style.background-color]="getScoreColor(dashboard.overallSecurityScore)">
-          </div>
+        <div class="score-details">
+            <h2>Overall Security Score</h2>
+            <div class="progress-bar">
+                <div class="progress-fill" 
+                    [style.width.%]="d.overallSecurityScore"
+                    [style.background-color]="getScoreColor(d.overallSecurityScore)">
+                </div>
+            </div>
         </div>
-      </div>
     </div>
 
     <!-- Statistics Grid -->
     <div class="stats-grid">
         <div class="stat-card">
             <div class="stat-icon">🔐</div>
-            <div class="stat-value">{{ dashboard.totalPasswords }}</div>
+            <div class="stat-value">{{ d.totalPasswords }}</div>
             <div class="stat-label">Total Passwords</div>
         </div>
 
         <div class="stat-card weak">
             <div class="stat-icon">⚠️</div>
-            <div class="stat-value">{{ dashboard.weakPasswords }}</div>
+            <div class="stat-value">{{ d.weakPasswords }}</div>
             <div class="stat-label">Weak Passwords</div>
         </div>
 
         <div class="stat-card breached">
             <div class="stat-icon">🚨</div>
-            <div class="stat-value">{{ dashboard.breachedPasswords }}</div>
+            <div class="stat-value">{{ d.breachedPasswords }}</div>
             <div class="stat-label">Breached</div>
         </div>
 
         <div class="stat-card reused">
             <div class="stat-icon">🔄</div>
-            <div class="stat-value">{{ dashboard.reusedPasswords }}</div>
+            <div class="stat-value">{{ d.reusedPasswords }}</div>
             <div class="stat-label">Reused</div>
         </div>
-    </div>
-
-    <!-- Recommendations -->
-    <div class="recommendations-card">
-        <h3>🎯 Security Recommendations</h3>
-        <ul class="recommendations-list">
-            <li *ngFor="let recommendation of dashboard.recommendations">
-                {{ recommendation }}
-            </li>
-        </ul>
     </div>
 
     <!-- Action Buttons -->
@@ -65,14 +55,13 @@
         <button class="btn btn-danger" routerLink="/passwords/breached">
             View Breached Passwords
         </button>
-        </div>
     </div>
 
     <!-- Recommendations -->
     <div class="recommendations-card">
         <h3>🎯 Security Recommendations</h3>
         <ul class="recommendations-list">
-            <li *ngFor="let recommendation of dashboard.recommendations">
+            <li *ngFor="let recommendation of dashboard?.recommendations">
                 {{ recommendation }}
             </li>
         </ul>

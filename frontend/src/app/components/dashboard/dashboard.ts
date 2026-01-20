@@ -22,6 +22,7 @@ interface SecurityDashboard{
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss',
 })
+
 export class DashboardComponent implements OnInit {
   dashboard: SecurityDashboard | null = null;
   loading = true;
@@ -61,13 +62,13 @@ export class DashboardComponent implements OnInit {
       });
   }
 
-  getRatingColor(score: number): string{
+  getScoreColor(score: number): string{
       if (score >= 80) return '#10b981'; // green
       if (score >= 60) return '#f59e0b'; // yellow
       return '#ef4444'; // red
   }
 
-  getRatingLabel(score: number): string{
+  getScoreLabel(score: number): string{
       if (score >= 80) return 'Strong';
       if (score >= 60) return 'Moderate';
       if (score >= 40) return 'Fair';
