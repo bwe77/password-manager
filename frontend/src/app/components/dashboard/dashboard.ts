@@ -35,43 +35,60 @@ export class DashboardComponent implements OnInit {
   }
 
   loadDashboard(): void {
-    const token = localStorage.getItem('accessToken');
+    // const token = localStorage.getItem('accessToken');
 
-    if(!token){
-      this.router.navigate(['/login']);
-      return;
-    }
+    // if(!token){
+    //   this.router.navigate(['/login']);
+    //   return;
+    // }
 
-    const headers = new HttpHeaders({
-      'Authorization': `Bearer ${token}`
-    });
+    // const headers = new HttpHeaders({
+    //   'Authorization': `Bearer ${token}`
+    // });
 
-    this.http.get<SecurityDashboard>(`${environment.apiUrl}/dashboard`, { headers })
-      .subscribe({
-        next: (data) => {
-          this.dashboard = data;
-          this.loading = false;
-        },
-        error: (err) => {
-          if (err.status === 401 || err.status === 403) {
-            localStorage.removeItem('accessToken');
-            this.router.navigate(['/login']);
-            return;
-          }
-          this.error = 'Failed to load dashboard data.';
-          this.loading = false;
-          console.error('Dashboard error:', err);
-        }
-      });
+    // this.http.get<SecurityDashboard>(`${environment.apiUrl}/dashboard`, { headers })
+    //   .subscribe({
+    //     next: (data) => {
+    //       this.dashboard = data;
+    //       this.loading = false;
+    //     },
+    //     error: (err) => {
+    //       if (err.status === 401 || err.status === 403) {
+    //         localStorage.removeItem('accessToken');
+    //         this.router.navigate(['/login']);
+    //         return;
+    //       }
+    //       this.error = 'Failed to load dashboard data.';
+    //       this.loading = false;
+    //       console.error('Dashboard error:', err);
+    //     }
+    //   });
+    // testing data
+        this.dashboard = {
+        totalPasswords: 25,
+        weakPasswords: 3,
+        breachedPasswords: 1,
+        reusedPasswords: 2,
+        expiredPasswords: 0,
+        overallSecurityScore: 78,
+        lastUpdated: new Date().toISOString(),
+        recommendations: [
+          '🚨 Change 1 breached password immediately!',
+          '⚠️ Strengthen 3 weak passwords',
+          '⚠️ Use unique passwords for each site (found 2 reused)'
+        ]
+      };
+      this.loading = false;
+
   }
 
-  getScoreColor(score: number): string{
+  getRatingColor(score: number): string{
       if (score >= 80) return '#10b981'; // green
       if (score >= 60) return '#f59e0b'; // yellow
       return '#ef4444'; // red
   }
 
-  getScoreLabel(score: number): string{
+  getRatingLabel(score: number): string{
       if (score >= 80) return 'Strong';
       if (score >= 60) return 'Moderate';
       if (score >= 40) return 'Fair';
