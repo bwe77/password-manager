@@ -1,7 +1,7 @@
 package com.project.password.manager.security;
 
-import de.mkammerer.argon2.Argon2;
-import de.mkammerer.argon2.Argon2Factory;
+import org.bouncycastle.crypto.generators.Argon2BytesGenerator;
+import org.bouncycastle.crypto.params.Argon2Parameters;
 import org.springframework.stereotype.Service;
 
 import java.nio.charset.StandardCharsets;
@@ -11,6 +11,8 @@ import java.util.Base64;
 
 /**
  * Custom Argon2 service for deriving encryption keys from master passwords.
+ * 
+ * Uses BouncyCastle's Argon2 implementation for full control over key derivation.
  * 
  * This is separate from Spring Security's PasswordEncoder (which uses BCrypt)
  * because we need Argon2 specifically for key derivation in our zero-knowledge
@@ -36,16 +38,9 @@ public class Argon2Service {
     private static final int PARALLELISM = 1;
     private static final int HASH_LENGTH = 32; // 256 bits for AES-256
 
-    private final Argon2 argon2;
     private final SecureRandom secureRandom;
 
     public Argon2Service() {
-        // Use Argon2id (hybrid of Argon2i and Argon2d)
-        this.argon2 = Argon2Factory.create(
-            Argon2Factory.Argon2Types.ARGON2id,
-            SALT_LENGTH,
-            HASH_LENGTH
-        );
         this.secureRandom = new SecureRandom();
     }
 
@@ -74,27 +69,36 @@ public class Argon2Service {
      */
     public String deriveEncryptionKey(String masterPassword, String saltBase64) {
         try {
+            // Decode salt from Base64
             byte[] salt = Base64.getDecoder().decode(saltBase64);
             
-            // Use hashRaw() to get raw bytes instead of encoded string
-            // This ensures deterministic output: same password + salt = same key
-            byte[] hash = argon2.hashRaw(
-                ITERATIONS,
-                MEMORY_KB,
-                PARALLELISM,
-                masterPassword.toCharArray(),
-                StandardCharsets.UTF_8,
-                salt
-            );
+            // Convert password to bytes
+            byte[] passwordBytes = masterPassword.getBytes(StandardCharsets.UTF_8);
             
-            // Hash is already 32 bytes (256 bits) - perfect for AES-256
+            // Configure Argon2 parameters
+            Argon2Parameters params = new Argon2Parameters.Builder(Argon2Parameters.ARGON2_id)
+                .withVersion(Argon2Parameters.ARGON2_VERSION_13)
+                .withIterations(ITERATIONS)
+                .withMemoryAsKB(MEMORY_KB)
+                .withParallelism(PARALLELISM)
+                .withSalt(salt)
+                .build();
+            
+            // Generate the hash
+            Argon2BytesGenerator generator = new Argon2BytesGenerator();
+            generator.init(params);
+            
+            byte[] hash = new byte[HASH_LENGTH];
+            generator.generateBytes(passwordBytes, hash);
+            
+            // Clear sensitive data
+            clearArray(passwordBytes);
+            
+            // Return Base64-encoded key
             return Base64.getEncoder().encodeToString(hash);
             
         } catch (Exception e) {
             throw new RuntimeException("Failed to derive encryption key", e);
-        } finally {
-            // Wipe sensitive data from memory
-            argon2.wipeArray(masterPassword.toCharArray());
         }
     }
 
@@ -138,54 +142,28 @@ public class Argon2Service {
         try {
             byte[] salt = Base64.getDecoder().decode(saltBase64);
             
-            // Combine password with purpose to create unique derivation
-            String combinedPassword = masterPassword + ":" + purpose;
+            // Append purpose to salt for unique derivation
+            byte[] purposeBytes = purpose.getBytes(StandardCharsets.UTF_8);
+            byte[] modifiedSalt = new byte[salt.length + purposeBytes.length];
+            System.arraycopy(salt, 0, modifiedSalt, 0, salt.length);
+            System.arraycopy(purposeBytes, 0, modifiedSalt, salt.length, purposeBytes.length);
             
-            byte[] hash = argon2.hashRaw(
-                ITERATIONS,
-                MEMORY_KB,
-                PARALLELISM,
-                combinedPassword.toCharArray(),
-                StandardCharsets.UTF_8,
-                salt
-            );
-            
-            return Base64.getEncoder().encodeToString(hash);
+            String modifiedSaltBase64 = Base64.getEncoder().encodeToString(modifiedSalt);
+            return deriveEncryptionKey(masterPassword, modifiedSaltBase64);
             
         } catch (Exception e) {
             throw new RuntimeException("Failed to derive secondary key", e);
-        } finally {
-            argon2.wipeArray(masterPassword.toCharArray());
         }
     }
 
     /**
-     * Hash a password for verification (not for key derivation).
-     * This is useful for additional password checks.
-     * 
-     * @param password The password to hash
-     * @return Argon2 hash string (encoded with parameters)
+     * Securely clear sensitive data from memory
      */
-    public String hashPassword(String password) {
-        try {
-            return argon2.hash(ITERATIONS, MEMORY_KB, PARALLELISM, password.toCharArray());
-        } finally {
-            argon2.wipeArray(password.toCharArray());
-        }
-    }
-
-    /**
-     * Verify a password against an Argon2 hash.
-     * 
-     * @param hash The Argon2 hash string
-     * @param password The password to verify
-     * @return true if password matches
-     */
-    public boolean verifyPassword(String hash, String password) {
-        try {
-            return argon2.verify(hash, password.toCharArray());
-        } finally {
-            argon2.wipeArray(password.toCharArray());
+    private void clearArray(byte[] array) {
+        if (array != null) {
+            for (int i = 0; i < array.length; i++) {
+                array[i] = 0;
+            }
         }
     }
 
@@ -194,7 +172,6 @@ public class Argon2Service {
      * Call this when done with sensitive operations.
      */
     public void cleanup() {
-        // Argon2 library handles memory cleanup automatically via wipeArray()
-        // This method exists for future enhancements if needed
+        // Manual cleanup if needed
     }
 }

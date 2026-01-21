@@ -54,10 +54,13 @@ export class DashboardComponent implements OnInit {
         },
         error: (err) => {
           if (err.status === 401 || err.status === 403) {
+            localStorage.removeItem('accessToken');
             this.router.navigate(['/login']);
+            return;
           }
           this.error = 'Failed to load dashboard data.';
           this.loading = false;
+          console.error('Dashboard error:', err);
         }
       });
   }

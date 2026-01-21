@@ -1,73 +1,99 @@
-<div class="dashboard-container" *ngIf="!loading && !error && dashboard as d">
-    <h1>SecurePass Dashboard</h1>
-    <p class="last-checked">Last checked: {{ dashboard.lastUpdated | date:'short' }}</p>
-    
-    <!-- Overall Score-->
-    <div class="security-score" [style.background-color]="getScoreColor(d.overallSecurityScore)">
-        <div class="score-circle" [style.border-color]="getScoreColor(d.overallSecurityScore)">
-            <div class="score-value">{{ d.overallSecurityScore }}</div>
-            <div class="score-label">{{ getScoreLabel(d.overallSecurityScore) }}</div>
-        </div>
-
-        <div class="score-details">
-            <h2>Overall Security Score</h2>
-            <div class="progress-bar">
-                <div class="progress-fill" 
-                    [style.width.%]="d.overallSecurityScore"
-                    [style.background-color]="getScoreColor(d.overallSecurityScore)">
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Statistics Grid -->
-    <div class="stats-grid">
-        <div class="stat-card">
-            <div class="stat-icon">🔐</div>
-            <div class="stat-value">{{ d.totalPasswords }}</div>
-            <div class="stat-label">Total Passwords</div>
-        </div>
-
-        <div class="stat-card weak">
-            <div class="stat-icon">⚠️</div>
-            <div class="stat-value">{{ d.weakPasswords }}</div>
-            <div class="stat-label">Weak Passwords</div>
-        </div>
-
-        <div class="stat-card breached">
-            <div class="stat-icon">🚨</div>
-            <div class="stat-value">{{ d.breachedPasswords }}</div>
-            <div class="stat-label">Breached</div>
-        </div>
-
-        <div class="stat-card reused">
-            <div class="stat-icon">🔄</div>
-            <div class="stat-value">{{ d.reusedPasswords }}</div>
-            <div class="stat-label">Reused</div>
-        </div>
-    </div>
-
-    <!-- Action Buttons -->
-    <div class="action-buttons">
-        <button class="btn btn-primary" routerLink="/passwords/weak">
-            View Weak Passwords
-        </button>
-        <button class="btn btn-danger" routerLink="/passwords/breached">
-            View Breached Passwords
-        </button>
-    </div>
-
-    <!-- Recommendations -->
-    <div class="recommendations-card">
-        <h3>🎯 Security Recommendations</h3>
-        <ul class="recommendations-list">
-            <li *ngFor="let recommendation of dashboard?.recommendations">
-                {{ recommendation }}
-            </li>
-        </ul>
-    </div>
+<!-- Loading State -->
+<div *ngIf="loading" class="loading-container">
+  <div class="spinner"></div>
+  <p>Loading your security dashboard...</p>
 </div>
 
-<div *ngIf="loading">Loading...</div>
-<div *ngIf="error" class="error">{{ error }}</div>
+<!-- Error State -->
+<div *ngIf="error && !loading" class="error-container">
+  <div class="error-icon">⚠️</div>
+  <h2>{{ error }}</h2>
+  <p>Please try refreshing the page or contact support if the problem persists.</p>
+  <button (click)="loadDashboard()" class="retry-button">Retry</button>
+</div>
 
+<!-- Dashboard Content -->
+<div *ngIf="dashboard && !loading && !error" class="dashboard-container">
+  <!-- Page Header -->
+  <header class="dashboard-header">
+    <h1>Security Dashboard</h1>
+    <p class="subtitle">Monitor the health of your password vault</p>
+  </header>
+
+  <!-- Security Score Card -->
+  <div class="security-score-card" 
+       [style.border-color]="getRatingColor(dashboard.overallSecurityScore)">
+    <div class="score-circle" 
+         [style.border-color]="getRatingColor(dashboard.overallSecurityScore)">
+      <div class="score-value">{{ dashboard.overallSecurityScore }}</div>
+      <div class="score-max">/100</div>
+    </div>
+    <div class="score-info">
+      <h2>{{ getRatingLabel(dashboard.overallSecurityScore) }}</h2>
+      <p>Overall Security Rating</p>
+    </div>
+  </div>
+
+  <!-- Stats Grid -->
+  <div class="stats-grid">
+    <!-- Total Passwords -->
+    <div class="stat-card total">
+      <div class="stat-icon">🔐</div>
+      <div class="stat-content">
+        <div class="stat-value">{{ dashboard.totalPasswords }}</div>
+        <div class="stat-label">Total Passwords</div>
+      </div>
+    </div>
+
+    <!-- Weak Passwords -->
+    <div class="stat-card weak" [class.alert]="dashboard.weakPasswords > 0">
+      <div class="stat-icon">⚠️</div>
+      <div class="stat-content">
+        <div class="stat-value">{{ dashboard.weakPasswords }}</div>
+        <div class="stat-label">Weak Passwords</div>
+      </div>
+    </div>
+
+    <!-- Breached Passwords -->
+    <div class="stat-card breached" [class.alert]="dashboard.breachedPasswords > 0">
+      <div class="stat-icon">🚨</div>
+      <div class="stat-content">
+        <div class="stat-value">{{ dashboard.breachedPasswords }}</div>
+        <div class="stat-label">Breached</div>
+      </div>
+    </div>
+
+    <!-- Reused Passwords -->
+    <div class="stat-card reused" [class.alert]="dashboard.reusedPasswords > 0">
+      <div class="stat-icon">🔄</div>
+      <div class="stat-content">
+        <div class="stat-value">{{ dashboard.reusedPasswords }}</div>
+        <div class="stat-label">Reused</div>
+      </div>
+    </div>
+
+    <!-- Expired Passwords -->
+    <div class="stat-card expired" [class.alert]="dashboard.expiredPasswords > 0">
+      <div class="stat-icon">⏰</div>
+      <div class="stat-content">
+        <div class="stat-value">{{ dashboard.expiredPasswords }}</div>
+        <div class="stat-label">Expired</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recommendations Section -->
+  <div class="recommendations-section" *ngIf="dashboard.recommendations.length > 0">
+    <h2>🎯 Security Recommendations</h2>
+    <ul class="recommendations-list">
+      <li *ngFor="let rec of dashboard.recommendations" class="recommendation-item">
+        {{ rec }}
+      </li>
+    </ul>
+  </div>
+
+  <!-- Last Updated -->
+  <div class="last-updated">
+    <small>Last updated: {{ dashboard.lastUpdated | date:'medium' }}</small>
+  </div>
+</div>

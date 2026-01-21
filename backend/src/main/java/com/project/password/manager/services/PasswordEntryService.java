@@ -2,7 +2,6 @@ package com.project.password.manager.services;
 
 import com.project.password.manager.dto.request.CreatePasswordRequest;
 import com.project.password.manager.dto.request.UpdatePasswordRequest;
-import com.project.password.manager.dto.response.PasswordDetailResponse;
 import com.project.password.manager.dto.response.PasswordEntryResponse;
 import com.project.password.manager.models.PasswordEntry;
 import com.project.password.manager.models.User;

@@ -4,6 +4,8 @@ package com.project.password.manager.controllers;
 import com.project.password.manager.dto.request.CreatePasswordRequest;
 import com.project.password.manager.dto.request.UpdatePasswordRequest;
 import com.project.password.manager.dto.response.PasswordEntryResponse;
+import com.project.password.manager.models.User;
+import com.project.password.manager.repo.UserRepository;
 import com.project.password.manager.services.PasswordEntryService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -34,9 +36,11 @@ public class PasswordController {
     // POST /generate - generate password
     // POST /{id}/check-breach - manual breach check
     private final PasswordEntryService passwordEntryService;
+    private final UserRepository userRepository;
 
-    public PasswordController(PasswordEntryService passwordEntryService) {
+    public PasswordController(PasswordEntryService passwordEntryService, UserRepository userRepository) {
         this.passwordEntryService = passwordEntryService;
+        this.userRepository = userRepository;
     }
 
     /**
@@ -59,6 +63,7 @@ public class PasswordController {
      * 
      * Response: 201 CREATED
      */
+
     @PostMapping
     public ResponseEntity<PasswordEntryResponse> createPassword(Authentication authentication,
             @RequestHeader("X-Master-Password") String masterPassword,
@@ -187,8 +192,7 @@ public class PasswordController {
      *   "includeSymbols": true
      * }
      * 
-     * TODO: Implement when PasswordGeneratorService is ready
-     */
+     
     @PostMapping("/generate")
     public ResponseEntity<?> generatePassword() {
         return ResponseEntity.ok()
@@ -201,7 +205,6 @@ public class PasswordController {
      * The JWT filter sets the authenticated user's email in the authentication.
      * We need to extract the user ID for database queries.
      * 
-     * TODO: Consider storing user ID directly in JWT claims for efficiency
      */
     private Long getUserIdFromAuth(Authentication authentication) {
         // For now, return a placeholder
@@ -209,8 +212,9 @@ public class PasswordController {
         UserDetails userDetails = (UserDetails) authentication.getPrincipal();
         String email = userDetails.getUsername();
         
-        // TODO: Load user ID from database or JWT claims
-        // This is a simplified approach - optimize later
-        return 1L; // Placeholder - implement proper user ID extraction
+        User user = userRepository.findByEmail(email)
+            .orElseThrow(() -> new IllegalArgumentException("User not found"));
+    
+        return user.getId();
     }
 }

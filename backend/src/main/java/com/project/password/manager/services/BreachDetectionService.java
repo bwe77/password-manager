@@ -91,6 +91,7 @@ public class BreachDetectionService {
      * @param masterPassword User's master password (to decrypt passwords)
      * @return List of breached password entries
      */
+    @SuppressWarnings("unused")
     private List<BreachedPasswordInfo> checkAllPasswords(Long userId, String masterPassword) {
         
         List<BreachedPasswordInfo> breachedPasswords = new ArrayList<>();

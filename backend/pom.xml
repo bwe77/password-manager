@@ -60,11 +60,12 @@
 		</dependency>
 
 		<!-- Crypto -->
+		<!-- Replace the old argon2-jvm dependency with Spring Security Crypto -->
 		<dependency>
-			<groupId>de.mkammerer</groupId>
-			<artifactId>argon2-jvm</artifactId>
-			<version>2.11</version>
+			<groupId>org.springframework.security</groupId>
+			<artifactId>spring-security-crypto</artifactId>
 		</dependency>
+
 		<dependency>
 			<groupId>org.bouncycastle</groupId>
 			<artifactId>bcprov-jdk18on</artifactId>
@@ -127,6 +128,7 @@
 			<optional>true</optional>
 		</dependency>
 
+
 		<!-- H2 Database for Testing -->
 		<dependency>
 			<groupId>com.h2database</groupId>
@@ -140,6 +142,8 @@
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
+
+		
 
 	</dependencies>
 
