@@ -1,0 +1,170 @@
+<div class="register-container">
+  <div class="register-card">
+    <!-- Logo/Header -->
+    <div class="register-header">
+      <div class="logo">🔐</div>
+      <h1>Create Your Account</h1>
+      <p>Start securing your passwords with zero-knowledge encryption</p>
+    </div>
+
+    <!-- Error Alert -->
+    <div class="error-alert" *ngIf="error">
+      <span class="error-icon">⚠️</span>
+      <span>{{ error }}</span>
+    </div>
+
+    <!-- Register Form -->
+    <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="register-form">
+      
+      <!-- Email Field -->
+      <div class="form-group">
+        <label for="email">Email Address</label>
+        <input
+          id="email"
+          type="email"
+          formControlName="email"
+          placeholder="your@email.com"
+          [class.error]="hasError('email', 'required') || hasError('email', 'email')"
+          autocomplete="email"
+        />
+        <div class="error-message" *ngIf="hasError('email', 'required')">
+          Email is required
+        </div>
+        <div class="error-message" *ngIf="hasError('email', 'email')">
+          Please enter a valid email address
+        </div>
+      </div>
+
+      <!-- Master Password Field -->
+      <div class="form-group">
+        <label for="masterPassword">Master Password</label>
+        <div class="password-input-wrapper">
+          <input
+            id="masterPassword"
+            [type]="showPassword ? 'text' : 'password'"
+            formControlName="masterPassword"
+            placeholder="Create a strong master password"
+            [class.error]="hasError('masterPassword', 'required') || hasError('masterPassword', 'minlength') || hasError('masterPassword', 'weakPassword')"
+            autocomplete="new-password"
+          />
+          <button
+            type="button"
+            class="toggle-password"
+            (click)="togglePasswordVisibility('password')"
+            [attr.aria-label]="showPassword ? 'Hide password' : 'Show password'"
+          >
+            {{ showPassword ? '👁️' : '👁️‍🗨️' }}
+          </button>
+        </div>
+        
+        <!-- Password Strength Indicator -->
+        <div class="password-strength" *ngIf="registerForm.get('masterPassword')?.value">
+          <div class="strength-bar">
+            <div 
+              class="strength-fill"
+              [style.width.%]="passwordStrength"
+              [style.background-color]="getStrengthColor()"
+            ></div>
+          </div>
+          <div class="strength-label" [style.color]="getStrengthColor()">
+            {{ getStrengthLabel() }}
+          </div>
+        </div>
+
+        <div class="error-message" *ngIf="hasError('masterPassword', 'required')">
+          Master password is required
+        </div>
+        <div class="error-message" *ngIf="hasError('masterPassword', 'minlength')">
+          Must be at least 12 characters long
+        </div>
+        <div class="error-message" *ngIf="hasError('masterPassword', 'weakPassword')">
+          Must include uppercase, lowercase, number, and special character
+        </div>
+
+        <!-- Password Requirements -->
+        <div class="password-requirements">
+          <p class="requirements-title">Password must contain:</p>
+          <ul>
+            <li [class.valid]="registerForm.get('masterPassword')?.value?.length >= 12">
+              ✓ At least 12 characters
+            </li>
+            <li [class.valid]="/[A-Z]/.test(registerForm.get('masterPassword')?.value)">
+              ✓ Uppercase letter (A-Z)
+            </li>
+            <li [class.valid]="/[a-z]/.test(registerForm.get('masterPassword')?.value)">
+              ✓ Lowercase letter (a-z)
+            </li>
+            <li [class.valid]="/\d/.test(registerForm.get('masterPassword')?.value)">
+              ✓ Number (0-9)
+            </li>
+            <li [class.valid]="/[!@#$%^&*(),.?\":{}|<>]/.test(registerForm.get('masterPassword')?.value)">
+              ✓ Special character (!@#$%...)
+            </li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Confirm Password Field -->
+      <div class="form-group">
+        <label for="masterPasswordConfirm">Confirm Master Password</label>
+        <div class="password-input-wrapper">
+          <input
+            id="masterPasswordConfirm"
+            [type]="showConfirmPassword ? 'text' : 'password'"
+            formControlName="masterPasswordConfirm"
+            placeholder="Re-enter your master password"
+            [class.error]="hasError('masterPasswordConfirm', 'required') || hasFormError('passwordMismatch')"
+            autocomplete="new-password"
+          />
+          <button
+            type="button"
+            class="toggle-password"
+            (click)="togglePasswordVisibility('confirm')"
+            [attr.aria-label]="showConfirmPassword ? 'Hide password' : 'Show password'"
+          >
+            {{ showConfirmPassword ? '👁️' : '👁️‍🗨️' }}
+          </button>
+        </div>
+        <div class="error-message" *ngIf="hasError('masterPasswordConfirm', 'required')">
+          Please confirm your master password
+        </div>
+        <div class="error-message" *ngIf="hasFormError('passwordMismatch')">
+          Passwords do not match
+        </div>
+      </div>
+
+      <!-- Warning Notice -->
+      <div class="warning-notice">
+        <strong>⚠️ Important:</strong> Your master password cannot be recovered.
+        Make sure to remember it or store it safely!
+      </div>
+
+      <!-- Submit Button -->
+      <button
+        type="submit"
+        class="submit-button"
+        [disabled]="loading || registerForm.invalid"
+      >
+        <span *ngIf="!loading">Create Account</span>
+        <span *ngIf="loading" class="loading-spinner">
+          <span class="spinner"></span>
+          Creating account...
+        </span>
+      </button>
+    </form>
+
+    <!-- Login Link -->
+    <div class="register-footer">
+      <p>
+        Already have an account?
+        <a routerLink="/login" class="login-link">Sign in</a>
+      </p>
+    </div>
+  </div>
+
+  <!-- Security Notice -->
+  <div class="security-notice">
+    <p>🔒 Zero-knowledge encryption: We never see your passwords</p>
+    <p>🔐 Your data is encrypted before it leaves your device</p>
+  </div>
+</div>

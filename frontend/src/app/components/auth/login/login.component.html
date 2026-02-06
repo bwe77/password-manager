@@ -1,0 +1,128 @@
+<div class="login-container">
+    <!-- Logo -->
+    <div class="login-card">
+        <div class="login-header">
+            <div class="logo">🔐</div>
+            <h1>SecurePass</h1>
+            <p>Sign in to access your secure password vault</p>
+        </div>
+
+        <!-- error alert -->
+        <div class="error-alert" *ngIf="error">
+            <span class="error-icon">⚠️</span>
+            <span>{{ error }}</span>
+        </div>
+
+        <!-- login form -->
+
+    </div><div class="login-container">
+  <div class="login-card">
+    <!-- Logo/Header -->
+    <div class="login-header">
+      <div class="logo">🔐</div>
+      <h1>Welcome Back</h1>
+      <p>Sign in to access your secure password vault</p>
+    </div>
+
+    <!-- Error Alert -->
+    <div class="error-alert" *ngIf="error">
+      <span class="error-icon">⚠️</span>
+      <span>{{ error }}</span>
+    </div>
+
+    <!-- Login Form -->
+    <form [formGroup]="loginForm" (ngSubmit)="onSubmit()" class="login-form">
+      
+      <!-- Email Field -->
+      <div class="form-group">
+        <label for="email">Email Address</label>
+        <input
+          id="email"
+          type="email"
+          formControlName="email"
+          placeholder="your@email.com"
+          [class.error]="hasError('email', 'required') || hasError('email', 'email')"
+          autocomplete="email"
+        />
+        <div class="error-message" *ngIf="hasError('email', 'required')">
+          Email is required
+        </div>
+        <div class="error-message" *ngIf="hasError('email', 'email')">
+          Please enter a valid email address
+        </div>
+      </div>
+
+      <!-- Master Password Field -->
+      <div class="form-group">
+        <label for="masterPassword">Master Password</label>
+        <div class="password-input-wrapper">
+          <input
+            id="masterPassword"
+            [type]="showPassword ? 'text' : 'password'"
+            formControlName="masterPassword"
+            placeholder="Enter your master password"
+            [class.error]="hasError('masterPassword', 'required') || hasError('masterPassword', 'minlength')"
+            autocomplete="current-password"
+          />
+          <button
+            type="button"
+            class="toggle-password"
+            (click)="togglePasswordVisibility()"
+            [attr.aria-label]="showPassword ? 'Hide password' : 'Show password'"
+          >
+            {{ showPassword ? '👁️' : '👁️‍🗨️' }}
+          </button>
+        </div>
+        <div class="error-message" *ngIf="hasError('masterPassword', 'required')">
+          Master password is required
+        </div>
+        <div class="error-message" *ngIf="hasError('masterPassword', 'minlength')">
+          Master password must be at least 12 characters
+        </div>
+      </div>
+
+      <!-- 2FA Code Field (Optional) -->
+      <div class="form-group">
+        <label for="totpCode">
+          2FA Code
+          <span class="optional-label">(if enabled)</span>
+        </label>
+        <input
+          id="totpCode"
+          type="text"
+          formControlName="totpCode"
+          placeholder="000000"
+          maxlength="6"
+          autocomplete="one-time-code"
+        />
+      </div>
+
+      <!-- Submit Button -->
+      <button
+        type="submit"
+        class="submit-button"
+        [disabled]="loading || loginForm.invalid"
+      >
+        <span *ngIf="!loading">Sign In</span>
+        <span *ngIf="loading" class="loading-spinner">
+          <span class="spinner"></span>
+          Signing in...
+        </span>
+      </button>
+    </form>
+
+    <!-- Register Link -->
+    <div class="login-footer">
+      <p>
+        Don't have an account?
+        <a routerLink="/register" class="register-link">Create one</a>
+      </p>
+    </div>
+  </div>
+
+  <!-- Security Notice -->
+  <div class="security-notice">
+    <p>🔒 Your master password is never stored on our servers</p>
+    <p>🔐 All data is encrypted with zero-knowledge architecture</p>
+  </div>
+</div>
