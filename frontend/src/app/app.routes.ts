@@ -1,43 +1,47 @@
 import { Routes } from '@angular/router';
 import { DashboardComponent } from './components/dashboard/dashboard';
+import { LoginComponent } from './components/auth/login/login.component';
+import { RegisterComponent } from './components/auth/register/register.component';
 
 /**
  * Application Routes
  * 
  * Route Structure:
  * - / → Redirect to /dashboard
- * - /dashboard → Show security dashboard
- * - /login → Login page (to be created)
- * - /register → Registration page (to be created)
- * - ** → 404 page (to be created)
+ * - /login → Login page
+ * - /register → Registration page
+ * - /dashboard → Security dashboard (protected)
+ * - ** → Redirect to dashboard
  */
 export const routes: Routes = [
-    {
-        path: '',
-        redirectTo: '/dashboard',
-        pathMatch: 'full'
-    },
-    {
-        path: 'dashboard',
-        component: DashboardComponent
-        //TODO: add authGuards
-        // canActivate: [AuthGuard]
-    },
+  // Default route - redirect to dashboard
+  {
+    path: '',
+    redirectTo: '/dashboard',
+    pathMatch: 'full'
+  },
 
-    // Auth routes (to be created)
-    // {
-    //   path: 'login',
-    //   component: LoginComponent
-    // },
-    // {
-    //   path: 'register',
-    //   component: RegisterComponent
-    // },
+  // Auth routes
+  {
+    path: 'login',
+    component: LoginComponent
+  },
+  {
+    path: 'register',
+    component: RegisterComponent
+  },
 
-    // 404 Fallback
+  // Dashboard route (will be protected with AuthGuard later)
+  {
+    path: 'dashboard',
+    component: DashboardComponent,
+    // TODO: Add AuthGuard
+    // canActivate: [AuthGuard]
+  },
 
-    {
-        path: '**',
-        redirectTo: '/dashboard'
-    }
+  // 404 Fallback - redirect to dashboard
+  {
+    path: '**',
+    redirectTo: '/dashboard'
+  }
 ];
