@@ -95,12 +95,137 @@ export class AuthService {
                 'Authorization': `Bearer ${refreshToken}`
             });
 
-            this.http.post()
+            this.http.post(`${this.apiUrl}/auth/logout`, {}, { headers })
+                .subscribe({
+                    next: () => console.log('Logout successful'),
+                    error: (err) => console.error('Logout failed', err)
+                });
         }
+
+        //clear local storage
+        this.clearAuthData();
+
+        //update observables
+        this.currentUserSubject.next(null);
+        this.isAuthenticatedSubject.next(false);
+
+        //redirect to login
+        this.router.navigate(['/login']);
+    }
+
+    // refresh access token
+    refreshToken(): Observable<AuthResponse> {
+        const refreshToken = this.getRefreshToken();
+
+        if(!refreshToken){
+            throw new Error("No refresh token available");
+        }
+
+        const headers = new HttpHeaders({
+            'Authorization': `Bearer ${refreshToken}`
+        });
+
+        return this.http.post<AuthResponse>(`${this.apiUrl}/auth/refresh`, {}, { headers })
+            .pipe(
+                tap(response => this.handleAuthResponse(response))
+            );
+    }
+
+    // Get current access token
+    getAccessToken(): string | null{
+        return localStorage.getItem('accessToken');
+    }
+
+
+    private clearAuthData(): void {
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('user');
+    }
+
+
+    getRefreshToken() {
+        return localStorage.getItem('refreshToken');
     }
     
 
     getUserFromStorage(): User | null {
         throw new Error("Method not implemented.");
     }
+
+    getCurrentUser(): User | null {
+        return this.currentUserSubject.value;
+    }
+
+    isAuthenticated(): boolean {
+        return this.isAuthenticatedSubject.value;
+    }
+
+    private handleAuthResponse(response: AuthResponse): void {
+        //store tokens
+        localStorage.setItem('accessToken', response.accessToken);
+        localStorage.setItem('refreshToken', response.refreshToken);
+
+        //store user info
+        const user: User = {
+            userId: response.userId,
+            email: response.email,
+            totpEnabled: response.totpEnabled
+        };
+        localStorage.setItem('user', JSON.stringify(user));
+
+        //update observables
+        this.currentUserSubject.next(user);
+        this.isAuthenticatedSubject.next(true);
+    }
+
+    private getUserFromStorage(): User | null {
+        const userJson = localStorage.getItem('user');
+        if (!userJson) {
+            return null;
+        }
+
+        try {
+            return JSON.parse(userJson) as User;
+        } catch {
+            return null;
+        }
+    }
+
+    private hasValidToken(): boolean {
+        const token = this.getAccessToken();
+        if(!token) return false;
+
+        try{
+            const payload = this.parseJwt(token);
+            const now = Date.now() / 1000;
+            return payload.exp > now;
+
+        } catch{
+            return false;
+        }
+    }
+
+    private parseJwt(token: string): any {
+        try{
+            const base64Url = token.split('.')[1];
+            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => {
+                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+            }).join(''));
+
+            return JSON.parse(jsonPayload);
+        } catch{
+            return null;
+        }
+    }
+
+    private checkTokenValidity(): void {
+    if (!this.hasValidToken()) {
+        this.clearAuthData();
+        this.isAuthenticatedSubject.next(false);
+        this.currentUserSubject.next(null);
+        }
+    }
+    
 }
