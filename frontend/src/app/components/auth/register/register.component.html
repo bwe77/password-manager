@@ -153,36 +153,11 @@
               <span>Password Requirements</span>
             </div>
             <ul class="requirements-list">
-              <li [class.valid]="registerForm.get('masterPassword')?.value?.length >= 12">
-                <svg class="check-icon" fill="currentColor" viewBox="0 0 20 20">
-                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                </svg>
-                At least 12 characters
-              </li>
-              <li [class.valid]="/[A-Z]/.test(registerForm.get('masterPassword')?.value)">
-                <svg class="check-icon" fill="currentColor" viewBox="0 0 20 20">
-                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                </svg>
-                One uppercase letter
-              </li>
-              <li [class.valid]="/[a-z]/.test(registerForm.get('masterPassword')?.value)">
-                <svg class="check-icon" fill="currentColor" viewBox="0 0 20 20">
-                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                </svg>
-                One lowercase letter
-              </li>
-              <li [class.valid]="/\d/.test(registerForm.get('masterPassword')?.value)">
-                <svg class="check-icon" fill="currentColor" viewBox="0 0 20 20">
-                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                </svg>
-                One number
-              </li>
-              <li [class.valid]="/[!@#$%^&*(),.?\":{}|<>]/.test(registerForm.get('masterPassword')?.value)">
-                <svg class="check-icon" fill="currentColor" viewBox="0 0 20 20">
-                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                </svg>
-                One special character
-              </li>
+              <li [class.valid]="hasMinLength()"> ... At least 12 characters</li>
+              <li [class.valid]="hasUpperCase()"> ... One uppercase letter</li>
+              <li [class.valid]="hasLowerCase()"> ... One lowercase letter</li>
+              <li [class.valid]="hasNumber()"> ... One number</li>
+              <li [class.valid]="hasSpecialChar()"> ... One special character</li>
             </ul>
           </div>
 

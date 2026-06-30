@@ -149,10 +149,6 @@ export class AuthService {
     }
     
 
-    getUserFromStorage(): User | null {
-        throw new Error("Method not implemented.");
-    }
-
     getCurrentUser(): User | null {
         return this.currentUserSubject.value;
     }

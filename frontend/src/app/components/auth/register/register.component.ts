@@ -8,8 +8,8 @@ import { AuthService } from '../../../services/auth.service';
   selector: 'app-register',
   standalone: true,
   imports: [CommonModule, ReactiveFormsModule, RouterLink],
-  templateUrl: './register.component.html',
-  styleUrls: ['./register.component.css']
+  templateUrl:'./register.component.html',
+  styleUrls: ['./register.component.scss']
 })
 export class RegisterComponent {
     registerForm: FormGroup;
@@ -145,7 +145,17 @@ export class RegisterComponent {
         });
     }
 
-   
+    get passwordValue(): string {
+        return this.registerForm.get('masterPassword')?.value || '';
+    }
+
+    hasMinLength(): boolean   { return this.passwordValue.length >= 12; }
+    hasUpperCase(): boolean   { return /[A-Z]/.test(this.passwordValue); }
+    hasLowerCase(): boolean   { return /[a-z]/.test(this.passwordValue); }
+    hasNumber(): boolean      { return /\d/.test(this.passwordValue); }
+    hasSpecialChar(): boolean { return /[!@#$%^&*(),.?":{}|<>]/.test(this.passwordValue); }
+
+    
     hasError(fieldName: string, errorType: string): boolean {
         const field = this.registerForm.get(fieldName);
         return !!(field?.hasError(errorType) && field?.touched);
