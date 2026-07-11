@@ -80,15 +80,18 @@ export class RegisterComponent {
     }
 
     getStrengthLabel(): string {
-        if (this.passwordStrength >= 25) return 'Weak';
-        if (this.passwordStrength >= 50) return 'Moderate';
+        if (this.passwordStrength >= 95) return 'Very Strong';
         if (this.passwordStrength >= 75) return 'Strong';
+        if (this.passwordStrength >= 50) return 'Moderate';
+        if (this.passwordStrength >= 25) return 'Weak';
         return 'Very Weak';
     }
 
     getStrengthColor(): string {
+        if (this.passwordStrength >= 95) return '#10e77f';
         if (this.passwordStrength >= 75) return '#10b981';
         if (this.passwordStrength >= 50) return '#f59e0b';
+        if (this.passwordStrength >= 25) return '#ef4444';
 
         return '#ef4444';
     }
