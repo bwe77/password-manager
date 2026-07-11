@@ -35,50 +35,21 @@ export class DashboardComponent implements OnInit {
   }
 
   loadDashboard(): void {
-    // const token = localStorage.getItem('accessToken');
+    this.loading = true;
+    this.error = null;
 
-    // if(!token){
-    //   this.router.navigate(['/login']);
-    //   return;
-    // }
-
-    // const headers = new HttpHeaders({
-    //   'Authorization': `Bearer ${token}`
-    // });
-
-    // this.http.get<SecurityDashboard>(`${environment.apiUrl}/dashboard`, { headers })
-    //   .subscribe({
-    //     next: (data) => {
-    //       this.dashboard = data;
-    //       this.loading = false;
-    //     },
-    //     error: (err) => {
-    //       if (err.status === 401 || err.status === 403) {
-    //         localStorage.removeItem('accessToken');
-    //         this.router.navigate(['/login']);
-    //         return;
-    //       }
-    //       this.error = 'Failed to load dashboard data.';
-    //       this.loading = false;
-    //       console.error('Dashboard error:', err);
-    //     }
-    //   });
-    // testing data
-        this.dashboard = {
-        totalPasswords: 25,
-        weakPasswords: 3,
-        breachedPasswords: 1,
-        reusedPasswords: 2,
-        expiredPasswords: 0,
-        overallSecurityScore: 78,
-        lastUpdated: new Date().toISOString(),
-        recommendations: [
-          '🚨 Change 1 breached password immediately!',
-          '⚠️ Strengthen 3 weak passwords',
-          '⚠️ Use unique passwords for each site (found 2 reused)'
-        ]
-      };
-      this.loading = false;
+    this.http.get<SecurityDashboard>(`${environment.apiUrl}/dashboard`)
+      .subscribe({
+        next: (data) => {
+          this.dashboard = data;
+          this.loading = false;
+        },
+        error: (err) => {
+          this.error = 'Failed to load dashboard data.';
+          this.loading = false;
+          console.error('Dashboard error:', err);
+        }
+      });
 
   }
 

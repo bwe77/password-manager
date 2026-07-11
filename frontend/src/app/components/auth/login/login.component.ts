@@ -3,8 +3,6 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../services/auth.service';
-import { form } from '@angular/forms/signals';
-
 @Component({
     selector: 'app-login',
     standalone: true,
@@ -25,7 +23,8 @@ export class LoginComponent {
     ) {
         this.loginForm = this.fb.group({
             email: ['', [Validators.required, Validators.email]],
-            masterPassword: ['', [Validators.required, Validators.minLength(6)]],
+            masterPassword: ['', [Validators.required, Validators.minLength(12)]],
+            totpCode: [''] // Optional field for 2FA
         });
     }
 

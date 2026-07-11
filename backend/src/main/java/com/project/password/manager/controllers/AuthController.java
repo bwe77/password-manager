@@ -6,12 +6,18 @@ import org.springframework.web.bind.annotation.RestController;
 import com.project.password.manager.dto.request.AuthRequest;
 import com.project.password.manager.dto.request.RegisterRequest;
 import com.project.password.manager.dto.response.AuthResponse;
+import com.project.password.manager.models.User;
+import com.project.password.manager.repo.UserRepository;
 import com.project.password.manager.services.AuthenticationService;
 
 import jakarta.validation.Valid;
 
+import java.util.Map;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -21,10 +27,11 @@ import org.springframework.web.bind.annotation.RequestHeader;
 public class AuthController {
 
     private final AuthenticationService authenticationService;
+    private final UserRepository userRepository;
 
-
-    public AuthController(AuthenticationService authenticationService) {
+    public AuthController(AuthenticationService authenticationService, UserRepository userRepository) {
         this.authenticationService = authenticationService;
+        this.userRepository = userRepository;
     }
 
     // POST /register
@@ -60,16 +67,25 @@ public class AuthController {
 
     // POST /totp/enable
     @PostMapping("/totp/enable")
-    public ResponseEntity<?> enableTotp(@RequestHeader("Authorization") String authHeader) {
-        // This endpoint will be protected by JWT filter
-        // For now, just a placeholder
-        return ResponseEntity.ok().body("{\"message\": \"TOTP enable endpoint - implement later\"}");
+    public ResponseEntity<?> enableTotp(Authentication authentication) {
+        Long userId = getUserIdFromAuthHeader(authentication);
+        String qrCode = authenticationService.enableTotp(userId);
+        return ResponseEntity.ok(Map.of("qrCode", qrCode));
+    }
+
+    private Long getUserIdFromAuthHeader(Authentication authentication) {
+        UserDetails userDetails = (UserDetails) authentication.getPrincipal();
+        User user = userRepository.findByEmail(userDetails.getUsername())
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        return user.getId();
     }
 
     // POST /totp/verify
     @PostMapping("/totp/verify")
-    public ResponseEntity<?> verifyTotp(@RequestBody String code) {
-        // Placeholder for TOTP verification
-        return ResponseEntity.ok().body("{\"message\": \"TOTP verify endpoint - implement later\"}");
+    public ResponseEntity<?> verifyTotp(Authentication authentication, @RequestBody Map<String, String> request) {
+        Long userId = getUserIdFromAuthHeader(authentication);
+        String code = request.get("code");
+        boolean verified = authenticationService.verifyTotp(userId, code);
+        return ResponseEntity.ok(Map.of("verified", verified));
     }
 }
