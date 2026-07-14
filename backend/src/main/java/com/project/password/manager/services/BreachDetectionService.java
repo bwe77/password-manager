@@ -8,7 +8,7 @@ import com.project.password.manager.repo.UserRepository;
 import com.project.password.manager.security.Argon2Service;
 import com.project.password.manager.security.EncryptionService;
 
-
+import org.springframework.cglib.core.Local;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -175,5 +175,27 @@ public class BreachDetectionService {
         } catch (Exception e) {
            throw new RuntimeException("SHA-1 hashing failed", e);
         }
+    }
+
+    public BreachedPasswordInfo checkEntryBreach(Long userId, Long entryId, String masterPassword) {
+        User u = userRepository.findById(userId)
+            .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        PasswordEntry entry = passwordEntryRepository.findById(entryId)
+            .orElseThrow(() -> new IllegalArgumentException("Password entry not found"));
+
+        //ownership check
+        if(!entry.getUser().getId().equals(userId)){
+            throw new IllegalArgumentException("Password entry does not belong to user");
+        }
+
+        String key = argon2Service.deriveEncryptionKey(masterPassword, u.getSalt());
+        String plaintext = encryptionService.decrypt(entry.getEncryptedPassword(), entry.getIv(), key);
+
+        boolean breached = checkPasswordBreach(plaintext);
+        entry.setBreached(breached);
+        entry.setLastBreachCheck(LocalDateTime.now());
+        passwordEntryRepository.save(entry);
+        return new BreachedPasswordInfo(entry.getId(), entry.getSiteName(), entry.getUsername(), entry.getLastBreachCheck(),breached, null);
     }
 }

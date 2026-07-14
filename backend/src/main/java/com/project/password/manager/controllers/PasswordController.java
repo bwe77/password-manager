@@ -2,11 +2,16 @@ package com.project.password.manager.controllers;
 
 
 import com.project.password.manager.dto.request.CreatePasswordRequest;
+import com.project.password.manager.dto.request.GeneratePasswordRequest;
 import com.project.password.manager.dto.request.UpdatePasswordRequest;
+import com.project.password.manager.dto.response.BreachedPasswordInfo;
 import com.project.password.manager.dto.response.PasswordEntryResponse;
 import com.project.password.manager.models.User;
 import com.project.password.manager.repo.UserRepository;
+import com.project.password.manager.services.BreachDetectionService;
 import com.project.password.manager.services.PasswordEntryService;
+import com.project.password.manager.services.PasswordGeneratorService;
+
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -16,6 +21,10 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+
 
 /**
  * Password Controller
@@ -36,11 +45,15 @@ public class PasswordController {
     // POST /generate - generate password
     // POST /{id}/check-breach - manual breach check
     private final PasswordEntryService passwordEntryService;
+    private final PasswordGeneratorService passwordGeneratorService;
     private final UserRepository userRepository;
+    private final BreachDetectionService breachDetectionService;
 
-    public PasswordController(PasswordEntryService passwordEntryService, UserRepository userRepository) {
+    public PasswordController(PasswordEntryService passwordEntryService, PasswordGeneratorService passwordGeneratorService, UserRepository userRepository, BreachDetectionService breachDetectionService) {
         this.passwordEntryService = passwordEntryService;
+        this.passwordGeneratorService = passwordGeneratorService;
         this.userRepository = userRepository;
+        this.breachDetectionService = breachDetectionService;
     }
 
     /**
@@ -191,12 +204,12 @@ public class PasswordController {
      *   "includeNumbers": true,
      *   "includeSymbols": true
      * }
-     * 
+     */ 
      
     @PostMapping("/generate")
-    public ResponseEntity<?> generatePassword() {
-        return ResponseEntity.ok()
-            .body("{\"message\": \"Password generation - implement later\"}");
+    public ResponseEntity<?> generatePassword(@Valid @RequestBody GeneratePasswordRequest request) {
+        String password = passwordGeneratorService.generatePassword(request);
+        return ResponseEntity.ok(Map.of("password", password));
     }
 
     /**
@@ -217,4 +230,12 @@ public class PasswordController {
     
         return user.getId();
     }
+
+    @PostMapping("/{id}/check-breach")
+    public ResponseEntity<BreachedPasswordInfo> checkBreach(Authentication authentication, @PathVariable Long id, @RequestHeader("X-Master-Password") String masterPassword) {
+        Long userId = getUserIdFromAuth(authentication);
+        
+        return ResponseEntity.ok(breachDetectionService.checkEntryBreach(userId, id, masterPassword));
+    }
+    
 }
